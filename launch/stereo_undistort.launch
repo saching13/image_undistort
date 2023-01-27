@@ -4,9 +4,11 @@
 <arg name="namespace" default="$(arg mav_name)" />
 <arg name="first_camera_name" default="cam0" />
 <arg name="second_camera_name" default="cam1" />
+<arg name="first_camera_topic_prefix" default="cam0" />
+<arg name="second_camera_topic_prefix" default="cam1" />
 <arg name="scale" default="1.0" />
 <arg name="process_every_nth_frame" default="2" />
-<arg name="stereo_params_camchain" default="$(find mav_startup)/parameters/mavs/elster/camchain_p23037.yaml"/>
+<arg name="stereo_params_camchain" default=""/>
 
 <group ns="$(arg namespace)">
 
@@ -19,8 +21,8 @@
     
     <rosparam file="$(arg stereo_params_camchain)"/>
 
-    <remap from="raw/first/image" to="$(arg first_camera_name)/image_raw"/>
-    <remap from="raw/second/image" to="$(arg second_camera_name)/image_raw"/>
+    <remap from="raw/first/image" to="$(arg first_camera_topic_prefix)/image_raw"/>
+    <remap from="raw/second/image" to="$(arg second_camera_topic_prefix)/image_raw"/>
   </node>
 </group>
 

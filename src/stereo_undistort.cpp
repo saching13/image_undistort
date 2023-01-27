@@ -131,7 +131,8 @@ StereoUndistort::StereoUndistort(const ros::NodeHandle& nh,
             ImageSyncPolicy(queue_size_), first_image_sub_, second_image_sub_);
     image_sync_ptr_->registerCallback(
         boost::bind(&StereoUndistort::imagesCallback, this, _1, _2));
-
+      // ROS_WARN(
+      //     "imagesCallback Sync policy setup...\n ");
   } else {
     first_camera_info_sub_ptr_ =
         std::make_shared<message_filters::Subscriber<sensor_msgs::CameraInfo>>(
@@ -147,11 +148,14 @@ StereoUndistort::StereoUndistort(const ros::NodeHandle& nh,
     camera_sync_ptr_->registerCallback(
         boost::bind(&StereoUndistort::camerasCallback, this, _1, _2, _3, _4));
   }
+  // ROS_WARN_STREAM("Distotion Coeff type after all settings ... " << static_cast<int>(stereo_camera_parameters_ptr_->getFirst().getInputPtr()->distortionModel()));
+  
 }
 
 void StereoUndistort::updateUndistorter(const CameraSide& side) {
   std::shared_ptr<Undistorter>* undistorter_ptr_ptr;
   CameraParametersPair camera_parameters_pair;
+  // ROS_WARN_STREAM("Distotion Coeff In updateUndistorter ... " << static_cast<int>(stereo_camera_parameters_ptr_->getFirst().getInputPtr()->distortionModel()));
 
   if (side == CameraSide::FIRST) {
     undistorter_ptr_ptr = &first_undistorter_ptr_;
@@ -173,6 +177,8 @@ void StereoUndistort::updateUndistorter(const CameraSide& side) {
       return;
     }
   }
+    // ROS_WARN_STREAM("Distotion Coeff End updateUndistorter ... " << static_cast<int>(stereo_camera_parameters_ptr_->getFirst().getInputPtr()->distortionModel()));
+
 }
 
 void StereoUndistort::sendCameraInfo(const std_msgs::Header& header,
@@ -297,10 +303,14 @@ void StereoUndistort::imagesCallback(
   }
   frame_counter_ = 0;
 
+  // ROS_WARN("Process and send Image...\n ");
   processAndSendImage(first_image_msg_in, CameraSide::FIRST);
+  // ROS_WARN("Process and send Image...\n ");
   processAndSendImage(second_image_msg_in, CameraSide::SECOND);
 
   if (input_camera_info_from_ros_params_) {
+    // ROS_WARN("Get Input from ROS param\n ");
+
     std_msgs::Header header = first_image_msg_in->header;
     if (rename_input_frame_) {
       header.frame_id = first_input_frame_;

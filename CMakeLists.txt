@@ -11,9 +11,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Set compile flags (-Ofast actually makes a big difference over -O3 here (maybe 20% faster)
 if(${CMAKE_VERSION} VERSION_LESS "3.1.0")
-  set(CMAKE_CXX_FLAGS "-std=c++11 -Ofast")
+  set(CMAKE_CXX_FLAGS "-std=c++11 -O3")
 else()
-  set(CMAKE_CXX_FLAGS "-Ofast")
+  set(CMAKE_CXX_FLAGS "-O3")
   set(CMAKE_CXX_STANDARD 14)
 endif()
 

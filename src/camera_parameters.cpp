@@ -16,6 +16,8 @@ BaseCameraParameters::BaseCameraParameters(const ros::NodeHandle& nh,
   }
 
   std::vector<double> intrinsics_in;
+  std::cout << "(Sachin) BaseCameraParameters Intrinsics namespac: " << camera_namespace << std::endl;
+
   if (nh.getParam(camera_namespace + "/intrinsics", intrinsics_in)) {
     if (K_loaded) {
       ROS_WARN(
@@ -167,7 +169,12 @@ InputCameraParameters::InputCameraParameters(
   }
 
   std::vector<double> intrinsics_in;
+  ROS_WARN_STREAM_NAMED("Sachin --> ",
+   " Intrinsics namespac:  " << camera_namespace);
+                   
+  std::cout << "(Sachin) Intrinsics namespac: " << camera_namespace << std::endl;
   if (nh.getParam(camera_namespace + "/intrinsics", intrinsics_in)) {
+    ROS_WARN_STREAM_NAMED("Sachin --> ", " Intrinsics Size:  " << intrinsics_in.size());
     if (intrinsics_in.size() > 4) {
       D_.push_back(intrinsics_in[0]);
     }
@@ -259,6 +266,8 @@ const DistortionModel InputCameraParameters::stringToDistortion(
     }
 
   } else if (lower_case_camera_model == "omni") {
+    // ROS_WARN("Camera Model set to OMNI and distortion model is ...\n ");
+    ROS_WARN_STREAM_NAMED("Sachin --> ", " Camera Model set to OMNI and distortion model is ..." << lower_case_distortion_model);
     if ((lower_case_distortion_model == std::string("plumb bob")) ||
         (lower_case_distortion_model == std::string("plumb_bob")) ||
         (lower_case_distortion_model == std::string("radtan"))) {
@@ -306,6 +315,8 @@ bool CameraParametersPair::setCameraParameters(
     const CameraIO& io, const bool invert_T) {
   try {
     if (io == CameraIO::INPUT) {
+          ROS_WARN(
+          "CameraParametersPair setCameraParameters\n ");
       input_ptr_ = std::make_shared<InputCameraParameters>(nh, camera_namespace,
                                                            invert_T);
     } else {
@@ -353,6 +364,7 @@ bool CameraParametersPair::setOutputCameraParameters(
     const Eigen::Matrix<double, 3, 3>& K) {
   try {
     output_ptr_ = std::make_shared<OutputCameraParameters>(resolution, T, K);
+    ROS_WARN("setOutputCameraParameters org -1...\n ");
     return true;
   } catch (std::runtime_error e) {
     ROS_ERROR("%s", e.what());
@@ -383,6 +395,8 @@ bool CameraParametersPair::setOptimalOutputCameraParameters(
         "parameters have been given");
     return false;
   }
+        ROS_WARN("setOutputCameraParameters 0 -1...\n ");
+
   cv::Size resolution_estimate(
       std::ceil(input_ptr_->resolution().width * scale),
       std::ceil(input_ptr_->resolution().height * scale));
@@ -410,7 +424,12 @@ bool CameraParametersPair::setOptimalOutputCameraParameters(
   // As we are missing the forward projection model we iteratively estimate
   // image size assuming a linear relationship between warping and size at each
   // step
+    // ROS_WARN("setOutputCameraParameters attempts -1...\n ");
+  ROS_WARN_STREAM_NAMED("Sachin --> ", "  kFocalLengthEstimationAttempts:  " << kFocalLengthEstimationAttempts);
   for (size_t i = 0; i < kFocalLengthEstimationAttempts; ++i) {
+    ROS_WARN_STREAM_NAMED("Sachin --> ", "  kFocalLengthEstimationAttempts INC:  " << i);
+    ROS_WARN_STREAM_NAMED("Sachin --> ", "  Estimated width ->   " << resolution_estimate.width << " \n Estimated Height ->   " << resolution_estimate.height);
+
     // get list of edge points to check
     std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>>
         pixel_locations;
@@ -467,6 +486,7 @@ bool CameraParametersPair::setOptimalOutputCameraParameters(
   Eigen::Matrix3d K = P.topLeftCorner<3, 3>();
   Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
   T.topRightCorner<3, 1>() = input_ptr_->p();
+      ROS_WARN("setOutputCameraParameters optimal -1...\n ");
 
   return setOutputCameraParameters(resolution_estimate, T, K);
 }
@@ -481,10 +501,12 @@ void CameraParametersPair::generateCameraInfoMessage(
     std::shared_ptr<BaseCameraParameters> camera_parameters_ptr;
     if (io == CameraIO::INPUT) {
       camera_parameters_ptr = input_ptr_;
+        // ROS_WARN_STREAM(" Translation value in generateCameraInfoMessage CameraIO::INPUT Camera  After is " << camera_parameters_ptr->T());
+
     } else {
       camera_parameters_ptr = output_ptr_;
+      // ROS_WARN_STREAM(" Translation value in generateCameraInfoMessage CameraIO::OUTPUT Camera  After is " << camera_parameters_ptr->T());
     }
-
     camera_info->height = camera_parameters_ptr->resolution().height;
     camera_info->width = camera_parameters_ptr->resolution().width;
 
@@ -640,17 +662,30 @@ bool StereoCameraParameters::generateRectificationParameters() {
   Eigen::Vector3d x = first_.getInputPtr()->p() - second_.getInputPtr()->p();
   Eigen::Vector3d y = first_.getInputPtr()->R().col(2).cross(x);
   Eigen::Vector3d z = x.cross(y);
+  // ROS_WARN_STREAM(" Printing P of First camera " << first_.getInputPtr()->p());
+  // ROS_WARN_STREAM(" Printing P of second camera " << second_.getInputPtr()->p());
+
+  // ROS_WARN_STREAM(std::endl << " X ->  " << x << std::endl
+  //                           << " Y ->  " << y << std::endl
+  //                           << " Z ->  " << z << std::endl);
 
   Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
   T.topLeftCorner<3, 3>() << x.normalized(), y.normalized(), z.normalized();
-
+  ROS_WARN_STREAM(" Translation value in Rectification parameters is " << T);
   // took wrong camera as left (redo other way round)
   if (T(0, 0) < 0) {
+    ROS_WARN_STREAM(" Took wrong camera s lefty ");
+
     x = second_.getInputPtr()->p() - first_.getInputPtr()->p();
     y = second_.getInputPtr()->R().col(2).cross(x);
     z = x.cross(y);
     T.topLeftCorner<3, 3>() << x.normalized(), y.normalized(), z.normalized();
   }
+
+
+  // ROS_WARN_STREAM(" Translation value in First Camera Before is " << first_.getInputPtr()->T());
+  // ROS_WARN_STREAM(" Translation value in Second Camera Before is " << second_.getInputPtr()->T());
+
 
   first_.setInputCameraParameters(
       first_.getInputPtr()->resolution(),
@@ -660,6 +695,10 @@ bool StereoCameraParameters::generateRectificationParameters() {
       second_.getInputPtr()->resolution(),
       T.inverse() * second_.getInputPtr()->T(), second_.getInputPtr()->K(),
       second_.getInputPtr()->D(), second_.getInputPtr()->distortionModel());
+
+
+  // ROS_WARN_STREAM(" Translation value in First Camera  After is " << first_.getInputPtr()->T());
+  // ROS_WARN_STREAM(" Translation value in Second Camera After is " << second_.getInputPtr()->T());
 
   // set individual outputs
   if (!first_.setOptimalOutputCameraParameters(scale_) ||
@@ -681,6 +720,8 @@ bool StereoCameraParameters::generateRectificationParameters() {
   K(0, 2) = static_cast<double>(resolution.width) / 2.0;
   K(1, 2) = static_cast<double>(resolution.height) / 2.0;
   K(2, 2) = 1;
+  // ROS_WARN_STREAM(" Translation value in  First Output Camera After is " << first_.getOutputPtr()->T());
+  // ROS_WARN_STREAM(" Translation value in Second Output Camera After is " << second_.getOutputPtr()->T());
 
   // set the new consistent outputs
   if (!first_.setOutputCameraParameters(resolution, first_.getOutputPtr()->T(),

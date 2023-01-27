@@ -57,6 +57,8 @@ ImageUndistort::ImageUndistort(const ros::NodeHandle& nh,
   bool undistort_image;
   nh_private_.param("undistort_image", undistort_image, kDefaultUndistortImage);
   DistortionProcessing distortion_processing;
+  ROS_WARN(
+          "Ssetting Undistort PROCESS\n ");
   if (undistort_image) {
     distortion_processing = DistortionProcessing::UNDISTORT;
   } else {
@@ -99,9 +101,15 @@ ImageUndistort::ImageUndistort(const ros::NodeHandle& nh,
 
   // setup subscribers
   std::string input_camera_namespace;
+    std::cout << "camera input_camera_info_from_ros_params: " << input_camera_info_from_ros_params << std::endl;                      
+
   if (input_camera_info_from_ros_params) {
     nh_private_.param("input_camera_namespace", input_camera_namespace,
                       kDefaultInputCameraNamespace);
+    std::cout << "camera setCameraParameters: " << std::endl;                      
+    ROS_WARN(
+          "camera setCameraParameters\n ");
+
     if (!camera_parameters_pair_ptr_->setCameraParameters(
             nh_private_, input_camera_namespace, CameraIO::INPUT)) {
       ROS_FATAL("Loading of input camera parameters failed, exiting");
@@ -113,7 +121,12 @@ ImageUndistort::ImageUndistort(const ros::NodeHandle& nh,
   } else {
     camera_sub_ = it_.subscribeCamera("input/image", queue_size_,
                                       &ImageUndistort::cameraCallback, this);
+    ROS_WARN(
+          "camera In else of input_camera_info_from_ros_params\n ");
   }
+
+  ROS_WARN(
+          "Setting Publishers...\n ");
 
   // setup publishers
   if (process_image_) {
@@ -122,6 +135,9 @@ ImageUndistort::ImageUndistort(const ros::NodeHandle& nh,
       std::string output_camera_namespace;
       nh_private_.param("output_camera_namespace", output_camera_namespace,
                         kDefaultOutputCameraNamespace);
+      ROS_WARN(
+          "Setting output Cameraparameters...\n ");
+
       if (!camera_parameters_pair_ptr_->setCameraParameters(
               nh_private_, output_camera_namespace, CameraIO::OUTPUT)) {
         ROS_FATAL("Loading of output camera parameters failed, exiting");
@@ -131,25 +147,42 @@ ImageUndistort::ImageUndistort(const ros::NodeHandle& nh,
     } else if (output_camera_info_source_ == OutputInfoSource::MATCH_INPUT) {
       camera_parameters_pair_ptr_->setOutputFromInput(scale_);
     } else if (output_camera_info_source_ == OutputInfoSource::AUTO_GENERATED) {
+          ROS_WARN("Augotgen -1...\n ");
+
       camera_parameters_pair_ptr_->setOptimalOutputCameraParameters(scale_);
+                ROS_WARN("Augotgen +1...\n ");
+
     } else {
       camera_info_sub_ =
           nh_.subscribe("output/camera_info", queue_size_,
                         &ImageUndistort::cameraInfoCallback, this);
       pub_camera_info_output = false;
     }
+    ROS_WARN("FInishing setup -1...\n ");
 
     if (pub_camera_info_output) {
+
       camera_pub_ = it_.advertiseCamera("output/image", queue_size_);
     } else {
+    ROS_WARN("before 1...\n ");
+
       image_pub_ = it_.advertise("output/image", queue_size_);
+    ROS_WARN("FInishingsetup 1...\n ");
+
     }
+    ROS_WARN(
+    "FInishingsetup 3...\n ");
+
+
   } else {
     camera_parameters_pair_ptr_->setOutputFromInput(scale_);
 
     camera_info_pub_ = nh_.advertise<sensor_msgs::CameraInfo>(
         "output/camera_info", queue_size_);
   }
+  std::cout << "Camera parameters Set " << std::endl;
+  ROS_WARN(
+          "Camera parameters Set-------\n ");
 }
 
 void ImageUndistort::imageCallback(

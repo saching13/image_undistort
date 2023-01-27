@@ -251,6 +251,7 @@ void Depth::calcDisparityImage(
       cv_bridge::toCvShare(right_image_msg, "mono8");
 
 #if (defined(CV_VERSION_EPOCH) && CV_VERSION_EPOCH == 2)
+  ROS_WARN_STREAM("PIN DEFINED CV CV_VERSION_EPOCH. ");
 
   if (use_sgbm_) {
     std::shared_ptr<cv::StereoSGBM> left_matcher =
@@ -287,6 +288,8 @@ void Depth::calcDisparityImage(
   }
 #else
   if (use_sgbm_) {
+    ROS_WARN_STREAM("PIN UNDEFINED CV CV_VERSION_EPOCH. ");
+
     int mode;
     if (use_mode_HH_) {
       mode = cv::StereoSGBM::MODE_HH;
@@ -351,6 +354,8 @@ bool Depth::processCameraInfo(
   }
 
   for (size_t i = 0; i < 12; ++i) {
+    // ROS_WARN_STREAM("first_camera_info Projection Matrix at " << i <<" is -> " << first_camera_info->P[i] << std::endl
+    //  << "second_camera_info Projection Matrix  at " << i <<" is -> " << second_camera_info->P[i]);
     if ((i != 3) &&
         !ApproxEq(first_camera_info->P[i], second_camera_info->P[i])) {
       ROS_ERROR("Image P matrices must match (excluding x offset)");
@@ -416,11 +421,14 @@ void Depth::camerasCallback(
   bool first_is_left;
   int cx, cy;
 
+  ROS_WARN_STREAM("<------------ Starting Processing IOmage... ----------------->");
+
   if (!processCameraInfo(first_camera_info, second_camera_info, &baseline,
                          &focal_length, &first_is_left, &cx, &cy)) {
     ROS_ERROR("Camera info processing failed, skipping disparity generation");
     return;
   }
+  ROS_WARN_STREAM("Process Complete... ");
 
   sensor_msgs::ImageConstPtr left_image_msg;
   sensor_msgs::ImageConstPtr right_image_msg;
@@ -432,13 +440,17 @@ void Depth::camerasCallback(
     left_image_msg = second_image_msg;
     right_image_msg = first_image_msg;
   }
+  ROS_WARN_STREAM("Creating Disp Image... ");
 
   cv::Mat disparity_image =
       cv::Mat(left_image_msg->height, left_image_msg->width, CV_16S);
   cv_bridge::CvImagePtr disparity_ptr(new cv_bridge::CvImage(
       left_image_msg->header, "mono16", disparity_image));
 
+  ROS_WARN_STREAM("Calculating Disparity Image... ");
   calcDisparityImage(left_image_msg, right_image_msg, disparity_ptr);
+  ROS_WARN_STREAM("Publishing Disparity Image... ");
+
   disparity_pub_.publish(*(disparity_ptr->toImageMsg()));
 
   pcl::PointCloud<pcl::PointXYZRGB> pointcloud;
